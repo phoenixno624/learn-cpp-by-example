@@ -3,6 +3,44 @@
 #include <algorithm>
 #include <iterator>
 #include <format>
+#include <cassert>
+#include <numeric>
+#include <ranges>
+
+bool is_palindrome(const std::vector<int> &v)
+{
+    auto forward = v | std::views::take(v.size() / 2);
+    auto backward = v | std::views::reverse | std::views::take(v.size() / 2);
+
+    return std::ranges::equal(forward, backward);
+}
+
+void check_properties(const std::vector<std::vector<int>> &triangle)
+{
+    size_t row_number = 1;
+    for (const auto &row : triangle)
+    {
+        assert(row.front() == 1);
+        assert(row.back() == 1);
+        assert(row.size() == row_number++);
+    }
+
+    int expected_total = 1;
+    for (const auto &row : triangle)
+    {
+        assert(std::accumulate(row.begin(), row.end(), 0) == expected_total);
+        expected_total *= 2;
+
+        auto negative = [](int x)
+        {
+            return x < 0;
+        };
+        auto negatives = row | std::views::filter(negative);
+        assert(negatives.empty());
+
+        assert(is_palindrome(row));
+    }
+}
 
 void generate_triangle()
 {
@@ -73,8 +111,30 @@ void show_vectors(std::ostream &s, const std::vector<std::vector<int>> &v)
     }
 }
 
+void show_view(std::ostream &s, const std::vector<std::vector<int>> &v)
+{
+    std::string spaces(v.back().size(), ' ');
+    for (const auto &row : v)
+    {
+        s << spaces;
+        if (spaces.size())
+        {
+            spaces.resize(spaces.size() - 1);
+        }
+        auto odds = row | std::views::transform([](int x)
+                                                { return x % 2 ? '*' : ' '; });
+        for (const auto &data : odds)
+        {
+            s << data << ' ';
+        }
+        s << '\n';
+    }
+}
+
 int main()
 {
     auto triangle = generate_triangle(16);
-    show_vectors(std::cout, triangle);
+
+    check_properties(triangle);
+    show_view(std::cout, triangle);
 }
