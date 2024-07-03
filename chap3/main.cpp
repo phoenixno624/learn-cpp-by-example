@@ -7,6 +7,7 @@
 #include <format>
 #include <concepts>
 #include <random>
+#include <cassert>
 
 constexpr bool is_prime(int n)
 {
@@ -120,12 +121,46 @@ void guess_number_with_clues(unsigned number,
         std::cout << message(number, guess.value());
         std::cout << ">";
     }
-    std::cout << std::format("The number was {}\n", number);
+    std::cout << std::format("The number was {:0>5}\n", (number));
+}
+
+std::string check_which_digits_correct(int number, int guess)
+{
+    auto ns = std::format("{:0>5}", (number));
+    auto gs = std::format("{:0>5}", (guess));
+
+    std::string matches(5, '.');
+    for (size_t i = 0, stop = gs.length(); i < stop; ++i)
+    {
+        char guess_char = gs[i];
+        if (i < ns.length() && guess_char == ns[i])
+        {
+            matches[i] = '*';
+        }
+    }
+    for (size_t i = 0, stop = gs.length(); i < stop; ++i)
+    {
+        char guess_char = gs[i];
+        if (i < ns.length() && matches[i] != '*')
+        {
+            if (size_t idx = ns.find(guess_char, 0); idx != std::string::npos)
+            {
+                matches[i] = '^';
+                ns[idx] = '^';
+            }
+        }
+    }
+    return matches;
 }
 
 void check_properties()
 {
     static_assert(is_prime(2));
+
+    assert(check_which_digits_correct(12347, 23471) == "^^^^^");
+    assert(check_which_digits_correct(12347, 12347) == "*****");
+    assert(check_which_digits_correct(12347, 89560) == ".....");
+    assert(check_which_digits_correct(12347, 13248) == "*^^*.");
 }
 
 int main()
@@ -135,8 +170,8 @@ int main()
     unsigned number = some_prime_number();
     auto make_message = [](int number, int guess)
     {
-        return std::format("Your guess was too {}\n",
-                           (guess < number ? "small" : "big"));
+        return std::format("{}\n",
+                           check_which_digits_correct(number, guess));
     };
     guess_number_with_clues(number, make_message);
 }
